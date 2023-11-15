@@ -1,10 +1,14 @@
 import os
 from typing import Dict
 
+import pandas as pd
+import torch
+from constants import TRAIN, TEST, VAL
 from torch.utils.data import DataLoader
+from torch.utils.data import Dataset
 from torchvision import datasets
 from torchvision.transforms import transforms
-from constants import TRAIN, TEST, VAL
+
 
 def data_transforms(phase: str):
     if phase == TRAIN:
@@ -38,3 +42,24 @@ def get_dataloaders(data_dir: str) -> Dict[str, DataLoader]:
                    VAL: DataLoader(image_datasets[VAL], batch_size=256, shuffle=True),
                    TEST: DataLoader(image_datasets[TEST], batch_size=256, shuffle=True)}
     return dataloaders
+
+
+class TabularDataset(Dataset):
+
+    def __init__(self, df: pd.DataFrame) -> None:
+        self.df = df
+        self.x = self.df.drop(columns=LABEL_COL)
+        self.y = self.df[LABEL_COL]
+
+    def __getitem__(self, idx: int) -> (torch.Tensor, int):
+        batch = self.x.iloc[idx]
+        batch_tensor = torch.Tensor(batch)
+        label = self.y.iloc[idx]
+
+        return batch_tensor, label
+
+    def get_len(self):
+        return self.__len__()
+
+    def __len__(self) -> int:
+        return len(self.df)
